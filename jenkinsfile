@@ -1,0 +1,62 @@
+pipeline{
+    agent any
+    stages {
+        stage('Build') {
+        echo 'Building the Code'
+        //bat 'mvn verify'
+    }
+
+    stage('Testing') {
+        echo 'Parallel Testing Happening'
+
+        parallel (
+            ChromeTests: {
+                node('Ubuntu') {
+                    // Load the checked out code
+                   // unstash 'source_code'
+                    echo 'Running Chrome tests'
+                    //bat 'mvn verify -Dbrowser=chrome'
+                }
+            },
+            FirefoxTests: {
+                node {
+                  //  unstash 'source_code'
+                    echo 'Running Firefox tests'
+                    //bat 'mvn verify -Dbrowser=firefox'
+                }
+            },
+            EdgeTests: {
+                node {
+                    //unstash 'source_code'
+                    echo 'Running Edge tests'
+                   // bat 'mvn verify -Dbrowser=edge'
+                }
+            }
+        )
+    }
+
+    stage('Reports') {
+        echo 'Generating reports'
+        cucumber buildStatus: 'UNCHANGED', 
+                 customCssFiles: '', 
+                 customJsFiles: '', 
+                 failedFeaturesNumber: -1, 
+                 failedScenariosNumber: -1, 
+                 failedStepsNumber: -1, 
+                 fileIncludePattern: '/*.json', 
+                 pendingStepsNumber: -1, 
+                 skippedStepsNumber: -1, 
+                 sortingMethod: 'ALPHABETICAL', 
+                 undefinedStepsNumber: -1
+    }
+
+    stage('Email') {
+        echo 'Emailing the logs'
+        emailext body: '''Build Execution completed through pipeline 
+        Checkout + Build and Parallel Test + Reporting''', 
+        subject: 'Build Execution Completed', 
+        to: 'rajendrakocherla3798@gmail.com'
+    }
+
+    }
+}
